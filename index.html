@@ -356,7 +356,7 @@ function renderList() {
     return `<div class="item" onclick="openDet('${it.id}')">
       ${thumb}
       <div class="info">
-        <div class="iname">${esc(it.name)}</div>
+        <div class="iname">${esc(it.name) || '<span style="color:#bbb;font-weight:400;font-style:italic;">Unnamed item</span>'}</div>
         <div class="isub">${esc([it.supplier, it.catalog].filter(Boolean).join(' · ') || 'No supplier info')}${it.addedBy ? ' <span style="color:#bbb">· '+esc(it.addedBy)+'</span>' : ''}</div>
         <div class="tags">
           ${it.category ? `<span class="tag tag-blue">${esc(it.category)}</span>` : ''}
@@ -445,49 +445,49 @@ async function doAnalyze() {
   if (!imgs.length) return;
   document.getElementById('aibox').style.display = 'flex';
   document.getElementById('aispin').style.display = '';
-  document.getElementById('aimsg').textContent = 'Analyzing ' + imgs.length + ' photo' + (imgs.length > 1 ? 's' : '') + '…';
+  document.getElementById('aimsg').textContent = 'Analyzing…';
   document.getElementById('savebtn').disabled = true;
 
+  var KEY = 'AIzaSyCNZQSlrQ_VuzpICnLw-49mzxwV8Ft6ids';
+  var parts = [];
+  for (var i = 0; i < imgs.length; i++) {
+    var img = imgs[i];
+    parts.push({ inline_data: { mime_type: img.split(';')[0].split(':')[1] || 'image/jpeg', data: img.split(',')[1] } });
+  }
+  parts.push({ text: 'You are a lab supply identifier. Read every word on the package labels carefully. Return ONLY a raw JSON object (no markdown, no backticks): {"name":"product name","supplier":"brand","catalog":"catalog or lot number","category":"Biomaterial or Reagent or Cell culture or Consumable or Equipment or Printing material or Other","storage":"-80C Freezer or -20C Freezer or 4C Fridge or Room temp or Dry storage"}. Storage: GelMA/collagen/bioink/growth factors=-20C, antibodies/enzymes/media=4C, plastics/tips/tubes=Room temp.' });
+
   try {
-    const GEMINI_KEY = 'AIzaSyCNZQSlrQ_VuzpICnLw-49mzxwV8Ft6ids';
-    const parts = imgs.map(img => ({
-      inline_data: {
-        mime_type: img.split(';')[0].split(':')[1] || 'image/jpeg',
-        data: img.split(',')[1]
-      }
-    }));
-    parts.push({ text: `You are a lab supply identifier for a bioprinting and biomedical research lab. Read every label, text, logo, and number visible on the packaging. Multiple images may show different sides of the same item.
-
-Return ONLY valid JSON, no markdown, no explanation:
-{"name":"full product name as on label","supplier":"manufacturer or brand","catalog":"catalog or lot number","category":"one of: Biomaterial, Reagent, Cell culture, Consumable, Equipment, Printing material, Other","storage":"one of: -80C Freezer, -20C Freezer, 4C Fridge, Room temp, Dry storage"}
-
-Storage rules: GelMA/PEGDA/collagen/fibrinogen/bioink/growth factors → -20C Freezer. Antibodies/enzymes/cell media/serum → 4C Fridge. Cell lines/lentivirus → -80C Freezer. Plastics/tips/tubes/gloves → Room temp. Dry chemicals/powders → Dry storage. Use empty string if unreadable.` });
-
-    const res = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=' + GEMINI_KEY, {
+    var res = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=' + KEY, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ contents: [{ parts }] })
+      body: JSON.stringify({ contents: [{ parts: parts }] })
     });
-    const data = await res.json();
-    const txt = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
-    let p = {};
-    try { const m = txt.match(/\{[\s\S]*\}/); if (m) p = JSON.parse(m[0]); } catch(e) {}
-    if (p.name) document.getElementById('f-name').value = p.name;
-    if (p.supplier) document.getElementById('f-sup').value = p.supplier;
-    if (p.catalog) document.getElementById('f-cat').value = p.catalog;
-    if (p.category) document.getElementById('f-catg').value = p.category;
-    if (p.storage) {
-      const m = { '-80C Freezer':'-80°C Freezer','-20C Freezer':'-20°C Freezer','4C Fridge':'4°C Fridge','Room temp':'Room temp','Dry storage':'Dry storage' };
-      document.getElementById('f-stor').value = m[p.storage] || p.storage;
+    var data = await res.json();
+    var txt = (data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts && data.candidates[0].content.parts[0].text) ? data.candidates[0].content.parts[0].text : '';
+    var clean = txt.replace(/```json/g,'').replace(/```/g,'').trim();
+    var startIdx = clean.indexOf('{');
+    var endIdx = clean.lastIndexOf('}');
+    var p = {};
+    if (startIdx !== -1 && endIdx !== -1) { try { p = JSON.parse(clean.slice(startIdx, endIdx+1)); } catch(e) {} }
+    if (document.getElementById('f-name')) {
+      if (p.name) document.getElementById('f-name').value = p.name;
+      if (p.supplier) document.getElementById('f-sup').value = p.supplier;
+      if (p.catalog) document.getElementById('f-cat').value = p.catalog;
+      if (p.category) document.getElementById('f-catg').value = p.category;
+      if (p.storage) {
+        var sm = {'-80C Freezer':'-80°C Freezer','-20C Freezer':'-20°C Freezer','4C Fridge':'4°C Fridge','Room temp':'Room temp','Dry storage':'Dry storage'};
+        document.getElementById('f-stor').value = sm[p.storage] || p.storage;
+      }
+      document.getElementById('aispin').style.display = 'none';
+      document.getElementById('aimsg').textContent = p.name ? '✓ ' + p.name : 'Fill in manually';
     }
-    document.getElementById('aispin').style.display = 'none';
-    document.getElementById('aimsg').textContent = p.name ? '✓ Identified: ' + p.name : 'Could not identify — fill in manually';
   } catch(err) {
-    console.log('Gemini fetch error:', err);
-    document.getElementById('aispin').style.display = 'none';
-    document.getElementById('aimsg').textContent = 'Error: ' + err.message;
+    if (document.getElementById('aispin')) {
+      document.getElementById('aispin').style.display = 'none';
+      document.getElementById('aimsg').textContent = 'AI unavailable — fill in manually';
+    }
   }
-  document.getElementById('savebtn').disabled = false;
+  if (document.getElementById('savebtn')) document.getElementById('savebtn').disabled = false;
 }
 
 async function saveItem() {
@@ -497,7 +497,7 @@ async function saveItem() {
   btn.disabled = true; btn.textContent = 'Saving…';
   try {
     await pkgs.push({
-      name,
+      name: name || '',
       supplier: document.getElementById('f-sup').value.trim(),
       catalog: document.getElementById('f-cat').value.trim(),
       category: document.getElementById('f-catg').value,
