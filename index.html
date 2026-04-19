@@ -169,6 +169,8 @@ body { font-family: 'DM Sans', sans-serif; background: #f7f7f5; color: #111; min
 
 <div class="bottom-bar">
   <input type="file" id="f-main-bar" accept="image/*" capture="environment" style="display:none" onchange="onMainFile(event)"/>
+<input type="file" id="f-main" accept="image/*" capture="environment" style="display:none" onchange="onMainFile(event)"/>
+<input type="file" id="f-more" accept="image/*" capture="environment" style="display:none" onchange="onMoreFile(event)"/>
   <button class="bottom-add-btn" onclick="document.getElementById('f-main-bar').click()">
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="13" r="4" stroke="currentColor" stroke-width="2"/></svg>
     Tap to log a new package
@@ -259,12 +261,18 @@ body { font-family: 'DM Sans', sans-serif; background: #f7f7f5; color: #111; min
 // ── Name prompt ──
 let userName = localStorage.getItem('lab_user_name') || '';
 function showNamePrompt() {
-  document.getElementById('name-input').value = userName || '';
-  document.getElementById('name-overlay').classList.add('open');
+  var overlay = document.getElementById('name-overlay');
+  var input = document.getElementById('name-input');
+  if (!overlay || !input) return;
+  input.value = userName || '';
+  overlay.classList.add('open');
 }
 function initName() {
-  if (!userName) document.getElementById('name-overlay').classList.add('open');
-  else document.getElementById('user-name-text').textContent = userName;
+  var overlay = document.getElementById('name-overlay');
+  var nameText = document.getElementById('user-name-text');
+  if (!overlay || !nameText) return;
+  if (!userName) overlay.classList.add('open');
+  else nameText.textContent = userName;
 }
 function saveName() {
   const v = document.getElementById('name-input').value.trim();
@@ -274,7 +282,7 @@ function saveName() {
   document.getElementById('name-overlay').classList.remove('open');
   document.getElementById('user-name-text').textContent = userName;
 }
-initName();
+document.addEventListener('DOMContentLoaded', initName);
 </script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
@@ -448,7 +456,7 @@ async function doAnalyze() {
   document.getElementById('aimsg').textContent = 'Analyzing…';
   document.getElementById('savebtn').disabled = true;
 
-  var KEY = 'AIzaSyCNZQSlrQ_VuzpICnLw-49mzxwV8Ft6ids';
+  var KEY = 'AIzaSyB_3eLuMxT6tqkXhNnQNot80z0AuDxCHuk';
   var parts = [];
   for (var i = 0; i < imgs.length; i++) {
     var img = imgs[i];
