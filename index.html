@@ -133,8 +133,7 @@ body { font-family: 'DM Sans', sans-serif; background: #f7f7f5; color: #111; min
 .btn-r { color: #dc2626; border-color: rgba(255,92,92,.2); background: rgba(255,92,92,.06); }
 
 /* detail */
-.dphotos { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; }
-.dphotos::-webkit-scrollbar { display: none; }
+.dphotos { width: 100%; }
 .dphotos img { height: 130px; width: auto; border-radius: 8px; object-fit: cover; border: 1px solid #e0e0de; flex-shrink: 0; }
 .drow { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #f0f0ee; gap: 12px; font-size: 13px; }
 .drow:last-child { border: none; }
@@ -166,6 +165,11 @@ body::after {
   pointer-events: none;
   z-index: 0;
 }
+
+.lightbox { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.96); z-index:9999; align-items:center; justify-content:center; padding:16px; }
+.lightbox.open { display:flex; }
+.lightbox img { max-width:100%; max-height:100vh; object-fit:contain; border-radius:4px; }
+.lightbox-close { position:fixed; top:16px; right:16px; width:40px; height:40px; background:rgba(255,255,255,0.2); border:none; border-radius:50%; color:#fff; font-size:22px; cursor:pointer; display:flex; align-items:center; justify-content:center; z-index:10000; }
 </style>
 </head>
 <body>
@@ -542,9 +546,11 @@ async function saveItem() {
 function openDet(id) {
   const it = items.find(x => x.id === id); if (!it) return;
   detId = id;
-  document.getElementById('d-name').textContent = it.name;
+  document.getElementById('d-name').textContent = it.name || 'Unnamed item';
   const photos = it.imgs || (it.img ? [it.img] : []);
-  document.getElementById('d-photos').innerHTML = photos.map(s => `<img src="${s}" alt=""/>`).join('');
+  document.getElementById('d-photos').innerHTML = photos.map(s =>
+    '<img src="' + s + '" onclick="openLightbox(this.src)" style="width:100%;height:auto;display:block;border-radius:8px;margin-bottom:8px;cursor:zoom-in;border:1px solid #e8e8e6;" alt=""/>'
+  ).join('');
   const rows = [['Supplier',it.supplier],['Catalog / lot',it.catalog],['Category',it.category],['Storage',it.storage],['Notes',it.notes],['Added by',it.addedBy],['Received',fmtDateTime(it.ts)]].filter(([,v])=>v);
   document.getElementById('d-rows').innerHTML = rows.map(([k,v]) =>
     `<div class="drow"><span class="dk">${esc(k)}</span><span class="dv">${esc(v)}</span></div>`
@@ -580,6 +586,11 @@ function fmtDateTime(ts) { return new Date(ts).toLocaleDateString('en-US',{month
 </div>
 <div style="position:fixed;bottom:0;left:0;right:0;text-align:center;padding:8px 16px;font-size:11px;color:#bbb;letter-spacing:0.04em;background:#f7f7f5;border-top:1px solid #e8e8e6;z-index:5;">
   Ozbolat Lab &nbsp;·&nbsp; 2026 &nbsp;·&nbsp; Made by Ozer
+</div>
+
+<div class="lightbox" id="lightbox" onclick="closeLightbox()">
+  <button class="lightbox-close" onclick="closeLightbox()">×</button>
+  <img id="lightbox-img" src="" alt="" onclick="event.stopPropagation()"/>
 </div>
 </body>
 </html>
