@@ -220,7 +220,7 @@ body::after {
     <div class="sheet-body">
       <div class="photo-strip" id="pstrip"></div>
       <div class="ai-box" id="aibox" style="display:none"><div class="spinner" id="aispin"></div><span id="aimsg">Analyzing…</span></div>
-      <div class="field"><label>Product name</label><input id="f-name" placeholder="e.g. GelMA Hydrogel 5%"/></div>
+      <div class="field"><label>Product name</label><input id="f-name" placeholder="Product name (optional)"/></div>
       <div class="row2">
         <div class="field"><label>Supplier</label><input id="f-sup" placeholder="e.g. Sigma"/></div>
         <div class="field"><label>Catalog / lot</label><input id="f-cat" placeholder="e.g. G1234"/></div>
@@ -381,7 +381,7 @@ function renderList() {
       ${thumb}
       <div class="info">
         <div class="iname">${esc(it.name) || '<span style="color:#bbb;font-weight:400;font-style:italic;">Unnamed item</span>'}</div>
-        <div class="isub">${esc([it.supplier, it.catalog].filter(Boolean).join(' · ') || 'No supplier info')}${it.addedBy ? ' <span style="color:#bbb">· '+esc(it.addedBy)+'</span>' : ''}</div>
+        <div class="isub">${esc([it.supplier, it.catalog].filter(Boolean).join(' · '))}${it.addedBy ? '<span style="color:#bbb">' + ([it.supplier,it.catalog].filter(Boolean).length ? ' · ' : '') + esc(it.addedBy)+'</span>' : ''}</div>
         <div class="tags">
           ${it.category ? `<span class="tag tag-blue">${esc(it.category)}</span>` : ''}
           ${it.storage ? `<span class="tag tag-green">${esc(it.storage)}</span>` : ''}
